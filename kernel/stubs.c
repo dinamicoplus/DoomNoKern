@@ -17,6 +17,7 @@
 #include "ff.h"         // FatFs API
 
 #include "stubs.h"
+#include "input.h"
 // Lazy mount (single volume "")
 static FATFS g_fs;
 static int g_mounted = 0;
@@ -52,6 +53,23 @@ static int ff_to_errno(FRESULT fr) {
 #define VGA_WIDTH  80
 #define VGA_HEIGHT 25
 
+static inline uint8_t inb(uint16_t p){ uint8_t v; __asm__ volatile("inb %1,%0":"=a"(v):"Nd"(p)); return v; }
+static inline void outb(uint16_t p, uint8_t v){ __asm__ volatile("outb %0,%1"::"a"(v),"Nd"(p)); }
+
+void vga_enable_cursor(uint8_t start, uint8_t end){
+    outb(0x3D4, 0x0A);                 // Cursor Start
+    uint8_t val = (inb(0x3D5) & 0xC0) | (start & 0x1F);
+    outb(0x3D5, val);
+    outb(0x3D4, 0x0B);                 // Cursor End
+    outb(0x3D5, end & 0x1F);
+}
+
+void vga_update_cursor(int row, int col){        // 80x25
+    uint16_t pos = (uint16_t)(row * 80 + col);
+    outb(0x3D4, 0x0F); outb(0x3D5, (uint8_t)(pos & 0xFF));   // low
+    outb(0x3D4, 0x0E); outb(0x3D5, (uint8_t)(pos >> 8));     // high
+}
+
 static inline uint16_t vga_entry(char c, uint8_t attr) {
     return (uint16_t)c | ((uint16_t)attr << 8);
 }
@@ -62,16 +80,18 @@ void clear_scrn(void) {
             VGA_TEXT[row * VGA_WIDTH + col] = blank;
         }
     }
+		vga_update_cursor(0,0);
 }
 
 static int cursor_row = 0, cursor_col = 0;
 
 static void vga_putchar(char c) {
     const uint8_t attr = 0x07;
-    if (c == '\r') { cursor_col = 0; return; }
-    if (c == '\n') { cursor_col = 0; if (++cursor_row >= VGA_HEIGHT) cursor_row = 0; return; }
+    if (c == '\r') { cursor_col = 0; vga_update_cursor(cursor_row, cursor_col); return;  }
+    if (c == '\n') { cursor_col = 0; if (++cursor_row >= VGA_HEIGHT) cursor_row = 0; vga_update_cursor(cursor_row, cursor_col); return; }
     VGA_TEXT[(size_t)cursor_row * VGA_WIDTH + (size_t)cursor_col] = vga_entry(c, attr);
     if (++cursor_col >= VGA_WIDTH) { cursor_col = 0; if (++cursor_row >= VGA_HEIGHT) cursor_row = 0; }
+		vga_update_cursor(cursor_row, cursor_col);
 }
 static void vga_write(const char *p, size_t n) { for (size_t i=0;i<n;i++) vga_putchar(p[i]); }
 
@@ -126,7 +146,11 @@ ssize_t _write(int fd, const void *buf, size_t count) {
 }
 
 ssize_t _read(int fd, void *buf, size_t count) {
-    if (is_console_fd(fd)) return 0; // no stdin
+    //if (is_console_fd(fd)) return 0; // no stdin
+		if (fd == 0) {
+		    size_t got = kbd_read((char*)buf, count);
+		    return (ssize_t)got;  // puede ser 0 si no hay teclas
+		}
 
     if (ensure_mounted() < 0) return -1;
     fd_entry *e = fd_get(fd);

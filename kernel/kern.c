@@ -1,77 +1,94 @@
+// kern.c
 #include <stdio.h>
-#include "cpio.h"
-#include <ff.h>
+#include <stdarg.h>
+#include <stdint.h>
 #include "fat12_img.h"
 #include "stubs.h"
+#include "input.h"
+#include "pit.h"
+#include "vga13.h"
 
-FATFS fs;
-FIL f;
-char buf[64];
-extern unsigned char ramdisk_cpio[];
-extern unsigned int ramdisk_cpio_len;
+extern int kbd_getchar(void);  // de input.c (no bloqueante: -1 si no hay tecla)
 
-const void* ramdisk_data(void) { return ramdisk_cpio; }
-unsigned long ramdisk_size(void) { return ramdisk_cpio_len; }
+// lee una línea bloqueando (eco en pantalla), termina en '\0' sin incluir '\n'
+static int getline_kbd(char *buf, size_t max) {
+    size_t len = 0;
+    for (;;) {
+        int k = kbd_getchar();
+        if (k < 0) { __asm__ __volatile__("hlt"); continue; }   // espera activa suave
+        char c = (char)k;
 
+        if (c == '\r') c = '\n';
+        if (c == '\n') { putchar('\n'); buf[len] = '\0'; return (int)len; }
+
+        if (c == '\b') {                    // backspace
+            if (len) { len--; fputs("\b \b", stdout); }
+            continue;
+        }
+
+        if (len + 1 < max) {                // deja sitio para '\0'
+            buf[len++] = c;
+            putchar(c);                      // eco
+        }
+        // si se llena, ignora más caracteres hasta Enter
+    }
+}
+
+// ejemplo: pedir un entero usando sscanf
+int scan_int(const char *prompt, int *out_value) {
+    char line[64];
+    fputs(prompt, stdout);
+    int n = getline_kbd(line, sizeof(line));
+    if (n <= 0) return -1;
+    if (sscanf(line, "%d", out_value) == 1) return 0;
+    return -1;
+}
+
+void interrupts_init(void);
+/*
+// uso en tu kernel_main
 void kernel_main(void) {
-    // opcional: desbufferiza
     setvbuf(stdout, NULL, _IONBF, 0);
-    setvbuf(stderr, NULL, _IONBF, 0);
 		clear_scrn();
 
-    puts("Hola desde kernel_main!");
-    /*puts("Si ves este texto, el kernel arranco bien.");
-		printf("Funciona esto? %lu", ramdisk_size());
+    interrupts_init();       // instala IDT + remapea PIC + desenmascara IRQ1
+		pit_init(100);
+    __asm__ __volatile__("sti");   // <--- habilita interrupciones globales
 
-		uint32_t flen;
-		const char *file = cpio_find(ramdisk_cpio, ramdisk_cpio_len, "./README.txt", &flen);
-		if (file) {
-    		printf("Encontrado README.txt (%u bytes)\n", flen);
-    		// ya puedes leer `file[0..flen-1]`
-				int i=0;
-				for (i=0; i< flen; i++) {
-					printf("%c",file[i]);
-				}
-		} else {
-    		puts("README.txt no encontrado");
-		}*/
-
-    f_mount(&fs, "", 0);
-    /*if (f_open(&f, "README.TXT", FA_READ) == FR_OK) {
-        UINT br;
-        f_read(&f, buf, sizeof(buf)-1, &br);
-        buf[br] = 0;
-        puts(buf);
-        f_close(&f);
+    int x;
+    if (scan_int("Introduce un entero: ", &x) == 0) {
+        printf("Leido: %d\n", x);
     } else {
-        puts("no pude abrir README.TXT");
-    }
-    for(;;) __asm__ __volatile__("hlt");*/
-
-    FILE *f = fopen("README.TXT", "a+");   // abre para lectura/escritura, append al final
-    if (!f) {
-        puts("ERROR: no se pudo abrir README.TXT");
-        for(;;) __asm__ __volatile__("hlt");
+        puts("Entrada invalida.");
     }
 
-    puts("Contenido inicial de README.TXT:");
-    rewind(f); // ir al inicio para leer
-    char buf[64];
-    while (fgets(buf, sizeof(buf), f)) {
-        fputs(buf, stdout);
+    uint32_t start = pit_ticks;
+    uint32_t target = start + 5u * 100u;   // 5 s * 100 Hz = 500 ticks
+    while (pit_ticks < target) {
+        __asm__ __volatile__("hlt");       // duerme hasta la siguiente IRQ (timer/teclado)
     }
 
-    // Concatenar nueva línea al final
-    fputs("Concatenando linea...\n", f);
-    fflush(f);
+    puts("Han pasado 5 segundos!");
 
-    puts("\nSe ha concatenado la linea en README.TXT.");
-
-		rewind(f); // ir al inicio para leer
-    while (fgets(buf, sizeof(buf), f)) {
-        fputs(buf, stdout);
-    }
-		fclose(f);
     for(;;) __asm__ __volatile__("hlt");
-	
+}
+*/
+void kernel_main(void){
+    vga_set_mode13();
+    vga13_clear(0);                 // fondo negro
+    // dibujar algo
+    for (int x=0;x<320;x++) vga13_putpixel(x,100,(uint8_t)(x&255));
+
+    // si usas PIT: espera 5 s y pinta un rectángulo
+    extern volatile uint32_t pit_ticks;
+    extern void pit_init(uint32_t hz);
+    extern void interrupts_init(void);
+
+    interrupts_init(); pit_init(100); __asm__ __volatile__("sti");
+    uint32_t target = pit_ticks + 500;
+    while (pit_ticks < target) __asm__ __volatile__("hlt");
+
+    // rectángulo
+    for (int y=80;y<120;y++) for (int x=120;x<200;x++) vga13_putpixel(x,y,12); // rojo claro
+    for(;;) __asm__ __volatile__("hlt");
 }
