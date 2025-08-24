@@ -1,0 +1,5 @@
+*.tar.gz
+build-*/
+.DS_Store
+libarchive-3.8.1/
+newlib-*/

@@ -1,0 +1,13 @@
+prefix=/Users/marcosbrito/repositories/zig-qemu-kernel/newlib-4.5.0.20241231/../sysroot
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libarchive
+Description: library that can create and read several streaming archive formats
+Version: 3.8.1
+Cflags: -I${includedir}
+Cflags.private: -DLIBARCHIVE_STATIC
+Libs: -L${libdir} -larchive
+Libs.private: -lbz2  -lz -liconv -L/opt/homebrew/Cellar/xz/5.8.1/lib -llzma -lxml2
+Requires.private: 
