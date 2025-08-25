@@ -1,7 +1,7 @@
 /* linker32.ld — kernel ELF i386 (freestanding) */
 OUTPUT_FORMAT(elf32-i386)
 OUTPUT_ARCH(i386)
-ENTRY(_start)
+ENTRY(_mb1_start)
 
 KERNEL_BASE = 0x00100000;   /* 1 MiB */
 
@@ -12,7 +12,6 @@ SECTIONS
   __kernel_start = .;
 
   .text : ALIGN(16) {
-    /* Mantén los headers Multiboot */
     KEEP(*(.multiboot))
     KEEP(*(.multiboot2))
     *(.text .text.*)
@@ -22,10 +21,18 @@ SECTIONS
   .data   : ALIGN(16) { *(.data .data.*) }
 
   .bss (NOLOAD) : ALIGN(16) {
+    __bss_start = .;
     *(.bss .bss.*)
     *(COMMON)
+    __bss_end = .;
   }
 
+  /* Coloca la pila al final, en su propia sección */
+  .stack (NOLOAD) : ALIGN(16) {
+    __stack_bottom = .;
+    . = . + 256K;             /* reserva 64 KiB */
+    __stack_top = .;
+  }
   . = ALIGN(16);
   _end = .;
   __kernel_end = .;

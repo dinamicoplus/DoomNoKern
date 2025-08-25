@@ -1,0 +1,62 @@
+/* boot.S — Multiboot1 + entrada 32-bit con pila correcta en .bss */
+.section .multiboot
+.align 4
+.set MB_MAGIC,  0x1BADB002
+.set MB_FLAGS,  0x00000003         /* ALIGN|MEMINFO */
+.set MB_CHECK, -(MB_MAGIC + MB_FLAGS)
+.long MB_MAGIC
+.long MB_FLAGS
+.long MB_CHECK
+
+.section .text
+.global _start
+.extern kernel_main
+.extern __bss_start, __bss_end
+
+.set KERNEL_CS, 0x08
+.set KERNEL_DS, 0x10
+
+_start:
+    cli
+
+    /* Cargar una pila válida (tope de la reserva en .bss) */
+    mov $stack_top, %esp
+    and $-16, %esp                  /* alinear por si acaso */
+
+    mov $KERNEL_DS, %ax
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
+    mov %ax, %ss
+
+    
+    mov $__bss_start, %edi
+    mov $__bss_end,  %ecx
+    sub %edi, %ecx           # ECX = size
+    xor %eax, %eax
+    rep stosb
+
+    cld
+
+    mov %cr0, %eax
+    and $~(1<<2), %eax
+    and $~(1<<3), %eax
+    or  $(1<<1), %eax
+    or  $(1<<5), %eax
+    mov %eax, %cr0
+    fninit
+    
+    call kernel_main
+
+.hang:
+    hlt
+    jmp .hang
+
+/* ---------- Pila en .bss (NO usar .comm aquí) ---------- */
+.section .bss
+.balign 16
+stack_bottom:
+    .space 65535                    /* 16 KiB */
+.balign 16
+stack_top:

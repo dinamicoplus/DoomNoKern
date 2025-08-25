@@ -1,0 +1,67 @@
+/* boot.S — Multiboot1 + entrada 32-bit con pila correcta en .bss */
+.section .multiboot
+.align 4
+.set MB_MAGIC,  0x1BADB002
+.set MB_FLAGS,  0x00000003         /* ALIGN|MEMINFO */
+.set MB_CHECK, -(MB_MAGIC + MB_FLAGS)
+.long MB_MAGIC
+.long MB_FLAGS
+.long MB_CHECK
+
+.section .text
+.global _start
+.extern kernel_main
+.extern __bss_start, __bss_end, __stack_top
+
+.set KERNEL_CS, 0x08
+.set KERNEL_DS, 0x10
+
+_start:
+    cli
+
+    /* Cargar una pila válida (tope de la reserva en .bss) */
+    mov $__stack_top, %esp
+    and $-16, %esp                  /* alinear por si acaso */
+
+    mov $KERNEL_DS, %ax
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
+    mov %ax, %ss
+
+    cld
+    
+    mov $__bss_start, %edi
+    mov $__bss_end,  %ecx
+    sub %edi, %ecx           # ECX = size
+    xor %eax, %eax
+    rep stosb
+
+
+    /* después de preparar la pila y segmentos */
+    mov %cr0, %eax
+    and $~(1<<2), %eax      /* EM=0 (no emulación) */
+    or  $(1<<1), %eax       /* MP=1 */
+    or  $(1<<5), %eax       /* NE=1 (#MF por #10) */
+    mov %eax, %cr0
+
+    mov %cr4, %eax
+    or  $(1<<9),  %eax      /* OSFXSR=1: habilita XMM/SSE */
+    or  $(1<<10), %eax      /* OSXMMEXCPT=1: excepciones XMM por #XF */
+    mov %eax, %cr4
+
+    fninit                   /* x87 limpio (MXCSR ya es 0x1f80 tras reset) */
+    /* opcional: asegurar MXCSR=0x1f80
+    sub $16,%esp; mov $0x1f80,(%esp); ldmxcsr (%esp); add $16,%esp */
+
+    sub $8, %esp
+    movw $0x037F, (%esp)
+    fldcw (%esp)
+    add $8, %esp
+    
+    call kernel_main
+
+.hang:
+    hlt
+    jmp .hang

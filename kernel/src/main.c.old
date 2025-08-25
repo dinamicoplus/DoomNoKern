@@ -1,0 +1,83 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <drivers/vga13.h>
+#include <drivers/pit.h>
+#include <kernel/system.h>
+
+#define DEBUG_LINE puts("DEBUG\n"); while(1); /* DEBUG */
+
+#define A (char*)cell
+
+double cell[1024];  // shared stack and atom heap
+unsigned int hp = 0, sp = 1024;
+
+static inline double box_u64(unsigned long long u){ double x; memcpy(&x,&u,8); return x; }
+static inline unsigned long long to_u64(double x){ unsigned long long u; memcpy(&u,&x,8); return u; }
+
+static inline double box(unsigned t, unsigned i){
+    return box_u64(((unsigned long long)t<<48) | (unsigned long long)i);
+}
+
+/* interning of atom names (Lisp symbols), returns a unique NaN-boxed ATOM */
+double atom(const char *s) {
+  unsigned int i = 0;
+  while (i < hp && strcmp(A+i, s))  {
+    i += strlen(A+i)+1;
+  }            /* search for a matching atom name on the heap */
+  if (i == hp) {                                /* if not found */
+    hp += strlen(strcpy(A+i, s))+1;             /*   allocate and add a new atom name to the heap */
+    if (hp > sp<<3)                            /* abort when out of memory */
+      abort();
+  }
+  double ret = box(0x7ff8 , i);
+  return ret;
+}
+
+int func(int x) {
+    int a = 0;
+    for (int i=0; i<x; i++) {
+        if(i%2==0)
+            a += i;
+        if(i%3==0)
+            a -= i/2;
+    }
+    return a;
+}
+
+int main() {
+    printf("Hello, World!\n");
+    DEBUG_LINE
+    printf("func(5) = %d\n", func(3*func(52)));
+    return 0;
+}
+
+
+
+/*int main() {
+    vga_set_mode13();
+    vga13_clear(0);  // fondo negro
+    
+    // Dibujar una línea de gradiente
+    for (int x = 0; x < 320; x++) {
+        vga13_putpixel(x, 100, (uint8_t)(x & 255));
+    }
+    
+    // Esperar 5 segundos usando el timer
+    uint32_t target = pit_ticks + 500;  // 5 segundos a 100 Hz
+    while (pit_ticks < target) {
+        halt_cpu();  // espera eficiente
+    }
+    
+    // Dibujar un rectángulo
+    for (int y = 80; y < 120; y++) {
+        for (int x = 120; x < 200; x++) {
+            vga13_putpixel(x, y, 12);  // rojo claro
+        }
+    }
+    
+    // Bucle infinito
+    for (;;) {
+        halt_cpu();
+    }
+}*/
