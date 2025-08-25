@@ -20,6 +20,11 @@ static void lidt(void *idtr){
     __asm__ volatile("lidtl (%0)" :: "r"(idtr));
 }
 
+static inline uint16_t read_cs(void){
+    uint16_t cs; __asm__ volatile ("mov %%cs,%0" : "=r"(cs));
+    return cs;
+}
+
 /* Remapea PIC: maestro base=0x20, esclavo base=0x28, enmascara todo */
 void pic_remap_mask_all(void){
     outb(0x20, 0x11); outb(0xA0, 0x11);   // ICW1
@@ -44,16 +49,18 @@ void interrupts_init(void){
 
     pic_remap_mask_all();
 
+    uint16_t cs = read_cs();
+
     /* Faults básicas */
-    idt_set_gate(0x06, (uint32_t)isr6_stub,  KERNEL_CS, 0x8E); // #UD
-    idt_set_gate(0x07, (uint32_t)isr7_stub,  KERNEL_CS, 0x8E); // #NM
-    idt_set_gate(0x10, (uint32_t)isr10_stub, KERNEL_CS, 0x8E); // #MF
-    idt_set_gate(0x0D, (uint32_t)isr13_stub, KERNEL_CS, 0x8E); // #GP
-    idt_set_gate(0x0E, (uint32_t)isr14_stub, KERNEL_CS, 0x8E); // #PF
+    idt_set_gate(0x06, (uint32_t)isr6_stub,  cs, 0x8E); // #UD
+    idt_set_gate(0x07, (uint32_t)isr7_stub,  cs, 0x8E); // #NM
+    idt_set_gate(0x10, (uint32_t)isr10_stub, cs, 0x8E); // #MF
+    idt_set_gate(0x0D, (uint32_t)isr13_stub, cs, 0x8E); // #GP
+    idt_set_gate(0x0E, (uint32_t)isr14_stub, cs, 0x8E); // #PF
 
     /* IRQs que sí usamos */
-    idt_set_gate(0x20, (uint32_t)irq0_stub,  KERNEL_CS, 0x8E); // PIT
-    idt_set_gate(0x21, (uint32_t)irq1_stub,  KERNEL_CS, 0x8E); // KBD
+    idt_set_gate(0x20, (uint32_t)irq0_stub,  cs, 0x8E); // PIT
+    idt_set_gate(0x21, (uint32_t)irq1_stub,  cs, 0x8E); // KBD
 
     struct idt_ptr idtr = { .limit = sizeof(idt)-1, .base = (uint32_t)idt };
     lidt(&idtr);

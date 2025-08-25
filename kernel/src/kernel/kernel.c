@@ -1,4 +1,5 @@
 #include <kernel/console.h>
+#include <drivers/keyboard.h>
 #include <kernel/system.h>
 #include <arch/x86/idt.h>
 #include <stdio.h>
@@ -14,9 +15,8 @@ static inline void soft_test_irq1(void){
 void kernel_main(void){
     interrupts_init();
     console_init_all(&CONSOLE_TEXT, &STDIN_PS2, CONSOLE_STDIO_UNBUFFERED);
+    kbd_set_layout(KBD_LAYOUT_ES);
     enable_interrupts();
     console_clear();
-    soft_test_irq1();  // DEBUG: prueba de IRQ1 (teclado)
-    while(1);
-    //main();
+    main();
 }

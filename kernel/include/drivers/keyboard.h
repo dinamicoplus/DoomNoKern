@@ -40,6 +40,18 @@ size_t kbd_read(char *dst, size_t max);
  */
 #define KBD_BUF_SIZE 256
 
+typedef enum {
+    KBD_LAYOUT_US = 0,
+    KBD_LAYOUT_ES = 1,  // QWERTY España
+} kbd_layout_t;
+
+void kbd_set_layout(kbd_layout_t lay);
+kbd_layout_t kbd_get_layout(void);
+
+// Devuelven punteros a las tablas activas (para tu ISR)
+const char* kbd_table_unshift(void);
+const char* kbd_table_shift(void);
+
 #ifdef __cplusplus
 }
 #endif
