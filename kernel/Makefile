@@ -27,7 +27,7 @@ ARCH_BUILD   := $(BUILDDIR)/arch
 # =====================
 # Flags
 # =====================
-CFLAGS       := -g -target $(ZTGT) -ffreestanding -fno-stack-protector -fno-builtin \
+CFLAGS       := -g -O2 -target $(ZTGT) -ffreestanding -fno-stack-protector -fno-builtin \
                 -m80387 -I$(INCDIR) -I$(INCDIR)/newlib -I$(INCDIR)/fatfs -MMD -MP
 ASFLAGS      := -target $(ZTGT) -ffreestanding -fno-stack-protector -m80387
 LDFLAGS      := -target $(ZTGT) -nostdlib -nostartfiles -static \

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <disk/fat12_img.h>
 #include <arch/x86/io.h>
+#include <drivers/pit.h>
 
 extern int main(void);   // tu main() en src/main.c
 
@@ -18,5 +19,6 @@ void kernel_main(void){
     kbd_set_layout(KBD_LAYOUT_ES);
     enable_interrupts();
     console_clear();
+    pit_init(100);  // 100 Hz
     main();
 }
