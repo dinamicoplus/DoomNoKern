@@ -16,6 +16,21 @@
 #include <kernel/console.h>   // console_write()
 #include <kernel/stdin.h>     // stdin_read()
 
+typedef enum { TTY_RAW=0, TTY_COOKED=1 } tty_mode_t;
+static tty_mode_t g_tty_mode = TTY_COOKED;
+static int g_tty_echo = 1;
+
+void stdin_set_mode(int cooked){ g_tty_mode = cooked ? TTY_COOKED : TTY_RAW; }
+void stdin_set_echo(int on){ g_tty_echo = on ? 1 : 0; }
+
+// ---- helpers internos para eco “seguro” ----
+static inline void echo_char(char c){
+    if (!g_tty_echo) return;
+    if (c == '\b') console_write("\b \b", 3);
+    else console_putc(c);
+}
+static inline void echo_str(const char* s){ if (g_tty_echo) console_write(s, strlen(s)); }
+
 // ---------- FatFs ----------
 #include <fatfs/ff.h>         // FatFs API
 static FATFS g_fs;
@@ -98,14 +113,70 @@ ssize_t _write(int fd, const void *buf, size_t count) {
 }
 
 ssize_t _read(int fd, void *buf, size_t count) {
-    if (is_stdin_fd(fd)) {
-        // Bloquea hasta que haya al menos 1 byte
-        size_t n = 0;
+    if (fd == 0) {
+        if (g_tty_mode == TTY_RAW) {
+            // RAW: devolver lo disponible (no bloqueante + bloqueamos con hlt)
+            size_t n = 0;
+            while (n == 0) {
+                n = stdin_read((char*)buf, count);
+                if (n == 0) __asm__ __volatile__("hlt");
+            }
+            if (g_tty_echo) echo_str((const char*)buf);  // eco directo si quieres
+            return (ssize_t)n;
+        }
+
+        // COOKED: editar línea, tope de backspace = 0, devuelve al encontrar '\n'
+        static char line[256];
+        static size_t have = 0;   // bytes preparados y aún no entregados
+        static size_t pos  = 0;   // índice de lectura de 'line'
+
+        // Entrega remanente de una línea previa
+        if (have > 0) {
+            size_t n = have < count ? have : count;
+            memcpy(buf, line + pos, n);
+            pos  += n;
+            have -= n;
+            return (ssize_t)n;
+        }
+
+        // Construye nueva línea (bloquea hasta '\n')
+        size_t len = 0; // tope de edición (no se permite len<0)
         for (;;) {
-            n = stdin_read((char*)buf, count);  // no bloqueante
-            if (n > 0) return (ssize_t)n;
-            // dormir hasta la próxima interrupción (teclado/PIT)
-            __asm__ __volatile__("hlt");
+            int k = stdin_getchar();
+            if (k < 0) { __asm__ __volatile__("hlt"); continue; }
+            char c = (char)k;
+
+            // Normaliza CR → LF
+            if (c == '\r') c = '\n';
+
+            // Backspace/Delete: no borra antes del inicio (len==0)
+            if (c == '\b' || (unsigned char)c == 0x7F) {
+                if (len > 0) { len--; echo_char('\b'); }
+                continue;
+            }
+
+            // Fin de línea
+            if (c == '\n') {
+                echo_char('\n');
+                // Prepara buffer a entregar (incluye '\n' como hace un TTY)
+                if (len < sizeof(line)-1) { line[len++] = '\n'; }
+                pos = 0; have = len;
+                // Entrega ahora hasta 'count' (resto queda para la próxima _read)
+                size_t n = have < count ? have : count;
+                memcpy(buf, line + pos, n);
+                pos  += n;
+                have -= n;
+                return (ssize_t)n;
+            }
+
+            // Carácter imprimible normal
+            if (len + 1 < sizeof(line)) {  // reserva sitio para el '\n' posterior
+                line[len++] = c;
+                echo_char(c);
+            } else {
+                // opcional: campana al llegar al límite
+                // console_putc('\a');
+            }
         }
     }
     if (ensure_mounted() < 0) return -1;

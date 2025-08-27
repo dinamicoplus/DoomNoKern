@@ -49,6 +49,15 @@ static void vga_clear(void){
     vga_update_cursor(0, 0);
 }
 
+static void vga_backspace(void) {  
+    if (vga_col > 0) {
+        vga_col--;
+        //VGA_MEM[vga_row*VGA_W + vga_col] = vga_entry(' ', vga_attr);
+        vga_update_cursor(vga_row, vga_col);
+    }
+    return;
+}
+
 static void vga_putc(char ch){
     if (ch == '\r'){ vga_col = 0; vga_update_cursor(vga_row, vga_col); return; }
     if (ch == '\n'){
@@ -57,6 +66,7 @@ static void vga_putc(char ch){
         vga_update_cursor(vga_row, vga_col);
         return;
     }
+    if (ch == '\b') { vga_backspace(); return; }
 
     VGA_MEM[vga_row*VGA_W + vga_col] = vga_entry(ch, vga_attr);
     if (++vga_col >= VGA_W){

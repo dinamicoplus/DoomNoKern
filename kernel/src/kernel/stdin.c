@@ -1,6 +1,5 @@
 #include <kernel/stdin.h>
 #include <drivers/keyboard.h>   // input_init(), kbd_getchar(), kbd_read()
-#include <kernel/console.h>    // console_echo_char(), console_echo_buf()
 
 static const stdin_ops_t* g_in = 0;
 
@@ -42,13 +41,11 @@ static int ps2_init(void){
 
 static int ps2_getchar(void){
     int c = kbd_getchar();
-    if (c >= 0) console_echo_char((char)c);   // <-- eco condicional
     return c;
 }
 
 static size_t ps2_read(char* dst, size_t max){
     size_t n = kbd_read(dst, max);
-    if (n) console_echo_buf(dst, n);          // <-- eco condicional
     return n;
 }
 static void ps2_shutdown(void){ /* opcional: re-mascarar IRQ1 si quieres */ }
