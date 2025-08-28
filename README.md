@@ -20,7 +20,6 @@ sudo apt install nasm mtools parted -q -y
 cd limine
 make
 cd ..
-truncate -s 64M disk.img
 ./scripts/create_disk.sh
 ```
 
@@ -40,7 +39,7 @@ truncate -s 64M disk.img
 cd kernel
 make
 cd ..
-./scripts/create_disk.sh
+./scripts/load_disk.sh
 qemu-system-i386 -cpu pentium3 -drive format=raw,file=disk.img -no-reboot -no-shutdown
 ```
 Para hacer debugging con lldb
