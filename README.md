@@ -1,6 +1,29 @@
 # Instrucciones
 
 ## Compilar
+
+```
+git submodule update --init --recursive
+```
+
+
+### Newlib
+```
+sudo apt update
+sudo apt install clang lld parted -q -y
+./scripts/compile-newlib.sh
+```
+
+### Limine
+```
+sudo apt install nasm mtools parted -q -y
+cd limine
+make
+cd ..
+./scripts/create_disk.sh
+```
+
+### Kernel
 - Compilar con -O2 evita que el compilador meta traps
 - Compilat con -g para depuracion
 - Hay que activar el punto flotante con -m80387 y ademas con las siguientes instrucciones en boot.S:
@@ -13,12 +36,61 @@
 - Cuidado con las mascaras de las interrupciones. Activo PIT y Keyboard
 
 ```
+cd kernel
 make
-./create_disk.sh
+cd ..
+./scripts/load_disk.sh
 qemu-system-i386 -cpu pentium3 -drive format=raw,file=disk.img -no-reboot -no-shutdown
 ```
 Para hacer debugging con lldb
 ```
 qemu-system-i386 -cpu pentium3 -drive format=raw,file=disk.img -no-reboot -no-shutdown -S -gdb tcp::1234,ipv4 -d int,guest_errors
-lldb -o "settings set target.x86-disassembly-flavor intel" -o "gdb-remote 127.0.0.1:1234" --arch i386 -- kernel.elf
+lldb -o "settings set target.x86-disassembly-flavor intel" -o "gdb-remote 127.0.0.1:1234" --arch i386 -- kernel/kernel.elf
+```
+
+## VBox
+Crear una imagen vdi
+```
+VBoxManage convertfromraw disk.img disk.vdi --format VDI --variant Standard
+```
+
+Crear una VM
+```
+VBoxManage createvm \
+    --name "kernel-test" \
+    --ostype "Other" \  
+    --register
+VBoxManage modifyvm "kernel-test" \     
+    --memory 64 \       
+    --vram 9 \ 
+    --acpi on \         
+    --ioapic off \
+    --chipset piix3 \
+    --boot1 disk \
+    --boot2 none \
+    --boot3 none \
+    --boot4 none \
+    --nictype1 Am79C973 \
+    --nic1 nat \
+    --graphicscontroller vboxvga
+VBoxManage storagectl "kernel-test" \                 
+    --name "IDE" \      
+    --add ide \
+    --controller PIIX4 \
+    --bootable on
+VBoxManage storageattach "kernel-test" \              
+    --storagectl "IDE" \
+    --port 0 \ 
+    --device 0 \        
+    --type hdd \ 
+    --medium $PWD/disk.vdi
+VBoxManage startvm "kernel-test" --type gui
+```
+
+No funciona en MacOSX M1 (ARM)
+
+## UTM
+
+```
+qemu-img convert -O qcow2 disk.vdi disk.qcow2
 ```

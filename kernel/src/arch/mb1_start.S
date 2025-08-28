@@ -15,6 +15,22 @@
 .extern __stack_top
 .extern kernel_main
 
+/* gdt.S (o al principio de tu boot.S) */
+    .p2align 3
+gdt:
+    .quad 0x0000000000000000          /* 0x00: null */
+    .quad 0x00CF9A000000FFFF          /* 0x08: code 32-bit, base=0, limit=4GiB */
+    .quad 0x00CF92000000FFFF          /* 0x10: data 32-bit, base=0, limit=4GiB */
+gdt_end:
+
+gdt_ptr:
+    .word gdt_end - gdt - 1
+    .long gdt
+
+/* Selectores */
+.set GDT_CS, 0x08
+.set GDT_DS, 0x10
+
 .global _start
 _start:
     jmp _mb1_start
@@ -24,6 +40,19 @@ _mb1_start:
     cli
     cld
 
+    /* 1) Cargar GDT propia (plana) y recargar TODOS los segment registers */
+    lgdt gdt_ptr
+
+    mov $GDT_DS, %ax
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
+    mov %ax, %ss
+
+    /* Recarga CS con far jump */
+    ljmp $GDT_CS, $1f
+1:
     /* Pila propia y alineada */
     mov $__stack_top, %esp
     and $-16, %esp
