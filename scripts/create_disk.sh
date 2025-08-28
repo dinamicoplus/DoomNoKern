@@ -10,15 +10,15 @@ if command -v hdiutil >/dev/null 2>&1; then
     echo "Dispositivo asignado: $DEV"
 
     sudo mkdir -p /Volumes/LIMINE
-    sudo mount -t msdos "${DEV}s1" /Volumes/LIMINE
+    sudo mount -t msdos "${DEV}s1" /Volumes/LIMINE || true
 
-    cp ../limine/bin/limine-bios.sys /Volumes/LIMINE/
-    cp ../limine.cfg                 /Volumes/LIMINE/
-    cp ../kernel/kernel.elf          /Volumes/LIMINE/
+    cp ./limine/limine-bios.sys /Volumes/LIMINE/
+    cp ./limine.conf                 /Volumes/LIMINE/
+    cp ./kernel/kernel.elf          /Volumes/LIMINE/
 
     sync
-    sudo umount /Volumes/LIMINE
-    hdiutil detach "$DEV"
+    sudo umount /Volumes/LIMINE || true
+    hdiutil detach "$DEV" || true
     echo "ok"
 
 elif command -v parted >/dev/null 2>&1 && command -v mformat >/dev/null 2>&1 && command -v mcopy >/dev/null 2>&1; then

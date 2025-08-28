@@ -2,6 +2,11 @@
 
 ## Compilar
 
+```
+git submodule update --init --recursive
+```
+
+
 ### Newlib
 ```
 sudo apt update
@@ -13,8 +18,6 @@ sudo apt install clang lld parted -q -y
 ```
 sudo apt install nasm mtools parted -q -y
 cd limine
-./bootstrap
-./configure --enable-bios
 make
 cd ..
 truncate -s 64M disk.img
