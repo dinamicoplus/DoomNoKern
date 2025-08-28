@@ -68,4 +68,7 @@ make -j"$JOBS" MAKEINFO=true
 make install
 
 echo
+rsync -a kernel/i686-elf/include/ kernel/include/newlib/
+rsync -a kernel/i686-elf/lib/ kernel/lib/
+rm -r kernel/i686-elf/
 echo "✔ Newlib instalada en: $PREFIX"
