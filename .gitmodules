@@ -1,3 +1,6 @@
 [submodule "fatfs"]
 	path = fatfs
 	url = git@github.com:dinamicoplus/fatfs.git
+[submodule "newlib"]
+	path = newlib
+	url = git@github.com:dinamicoplus/newlib.git

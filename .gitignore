@@ -6,3 +6,4 @@ newlib-*/
 build/
 limine/
 *.log
+build-newlib-i686/

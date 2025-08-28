@@ -1,6 +1,13 @@
 # Instrucciones
 
 ## Compilar
+
+### Newlib
+```
+sudo apt install clang lld
+./scripts/compile-newlib.sh
+```
+
 - Compilar con -O2 evita que el compilador meta traps
 - Compilat con -g para depuracion
 - Hay que activar el punto flotante con -m80387 y ademas con las siguientes instrucciones en boot.S:
