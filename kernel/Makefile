@@ -23,6 +23,7 @@ LDFLAGS       = -nostdlib -nostartfiles -static -Wl,--gc-sections -Wl,-T,linker3
 KERNEL_SRC    = $(SRCDIR)/kernel
 DRIVERS_SRC   = $(SRCDIR)/drivers
 ARCH_SRC      = $(SRCDIR)/arch
+DOOM_SRC      = $(SRCDIR)/../../doomgeneric/doomgeneric
 
 # =====================
 # Directorios de build
@@ -30,6 +31,7 @@ ARCH_SRC      = $(SRCDIR)/arch
 KERNEL_BUILD  = $(BUILDDIR)/kernel
 DRIVERS_BUILD = $(BUILDDIR)/drivers
 ARCH_BUILD    = $(BUILDDIR)/arch
+DOOM_BUILD    = $(BUILDDIR)/doom
 
 # =====================
 # Librerías
@@ -38,13 +40,96 @@ LIBS          = $(LIBDIR)/libm.a $(LIBDIR)/libfatfs.a
 LIBC          = $(LIBDIR)/libc.a
 
 # =====================
-# Fuentes
+# Fuentes (SIN WILDCARDS)
 # =====================
+# Rellena esta lista explícitamente con los .c de tu carpeta doomgeneric/doomgeneric
+DOOM_C = \
+  $(DOOM_SRC)/dummy.c \
+  $(DOOM_SRC)/am_map.c \
+  $(DOOM_SRC)/doomdef.c \
+  $(DOOM_SRC)/doomstat.c \
+  $(DOOM_SRC)/dstrings.c \
+  $(DOOM_SRC)/d_event.c \
+  $(DOOM_SRC)/d_items.c \
+  $(DOOM_SRC)/d_iwad.c \
+  $(DOOM_SRC)/d_loop.c \
+  $(DOOM_SRC)/d_main.c \
+  $(DOOM_SRC)/d_mode.c \
+  $(DOOM_SRC)/d_net.c \
+  $(DOOM_SRC)/f_finale.c \
+  $(DOOM_SRC)/f_wipe.c \
+  $(DOOM_SRC)/g_game.c \
+  $(DOOM_SRC)/hu_lib.c \
+  $(DOOM_SRC)/hu_stuff.c \
+  $(DOOM_SRC)/info.c \
+  $(DOOM_SRC)/i_cdmus.c \
+  $(DOOM_SRC)/i_endoom.c \
+  $(DOOM_SRC)/i_input.c \
+  $(DOOM_SRC)/i_joystick.c \
+  $(DOOM_SRC)/i_scale.c \
+  $(DOOM_SRC)/i_sound.c \
+  $(DOOM_SRC)/i_system.c \
+  $(DOOM_SRC)/i_timer.c \
+  $(DOOM_SRC)/memio.c \
+  $(DOOM_SRC)/m_argv.c \
+  $(DOOM_SRC)/m_bbox.c \
+  $(DOOM_SRC)/m_cheat.c \
+  $(DOOM_SRC)/m_config.c \
+  $(DOOM_SRC)/m_controls.c \
+  $(DOOM_SRC)/m_fixed.c \
+  $(DOOM_SRC)/m_menu.c \
+  $(DOOM_SRC)/m_misc.c \
+  $(DOOM_SRC)/m_random.c \
+  $(DOOM_SRC)/p_ceilng.c \
+  $(DOOM_SRC)/p_doors.c \
+  $(DOOM_SRC)/p_enemy.c \
+  $(DOOM_SRC)/p_floor.c \
+  $(DOOM_SRC)/p_inter.c \
+  $(DOOM_SRC)/p_lights.c \
+  $(DOOM_SRC)/p_map.c \
+  $(DOOM_SRC)/p_maputl.c \
+  $(DOOM_SRC)/p_mobj.c \
+  $(DOOM_SRC)/p_plats.c \
+  $(DOOM_SRC)/p_pspr.c \
+  $(DOOM_SRC)/p_saveg.c \
+  $(DOOM_SRC)/p_setup.c \
+  $(DOOM_SRC)/p_sight.c \
+  $(DOOM_SRC)/p_spec.c \
+  $(DOOM_SRC)/p_switch.c \
+  $(DOOM_SRC)/p_telept.c \
+  $(DOOM_SRC)/p_tick.c \
+  $(DOOM_SRC)/p_user.c \
+  $(DOOM_SRC)/r_bsp.c \
+  $(DOOM_SRC)/r_data.c \
+  $(DOOM_SRC)/r_draw.c \
+  $(DOOM_SRC)/r_main.c \
+  $(DOOM_SRC)/r_plane.c \
+  $(DOOM_SRC)/r_segs.c \
+  $(DOOM_SRC)/r_sky.c \
+  $(DOOM_SRC)/r_things.c \
+  $(DOOM_SRC)/sounds.c \
+  $(DOOM_SRC)/sha1.c \
+  $(DOOM_SRC)/statdump.c \
+  $(DOOM_SRC)/st_lib.c \
+  $(DOOM_SRC)/st_stuff.c \
+  $(DOOM_SRC)/s_sound.c \
+  $(DOOM_SRC)/tables.c \
+  $(DOOM_SRC)/v_video.c \
+  $(DOOM_SRC)/wi_stuff.c \
+  $(DOOM_SRC)/w_checksum.c \
+  $(DOOM_SRC)/w_file.c \
+  $(DOOM_SRC)/w_main.c \
+  $(DOOM_SRC)/w_wad.c \
+  $(DOOM_SRC)/z_zone.c \
+  $(DOOM_SRC)/w_file_stdc.c \
+  $(DOOM_SRC)/i_video.c \
+  $(DOOM_SRC)/doomgeneric.c \
+  $(DOOM_SRC)/doomgeneric_kernel.c
+
 KERNEL_C      = $(wildcard $(KERNEL_SRC)/*.c)
 DRIVERS_C     = $(wildcard $(DRIVERS_SRC)/*.c)
 ARCH_C        = $(wildcard $(ARCH_SRC)/*.c)
 ARCH_S        = $(wildcard $(ARCH_SRC)/*.S)
-MAIN_C        = $(SRCDIR)/main.c
 
 # =====================
 # Objetos
@@ -53,9 +138,9 @@ KERNEL_OBJ    = $(patsubst $(KERNEL_SRC)/%.c,$(KERNEL_BUILD)/%.o,$(KERNEL_C))
 DRIVERS_OBJ   = $(patsubst $(DRIVERS_SRC)/%.c,$(DRIVERS_BUILD)/%.o,$(DRIVERS_C))
 ARCH_OBJ_C    = $(patsubst $(ARCH_SRC)/%.c,$(ARCH_BUILD)/%.o,$(ARCH_C))
 ARCH_OBJ_S    = $(patsubst $(ARCH_SRC)/%.S,$(ARCH_BUILD)/%.o,$(ARCH_S))
-MAIN_OBJ      = $(patsubst $(SRCDIR)/%.c,$(BUILDDIR)/%.o,$(MAIN_C))
+DOOM_OBJ_C    = $(patsubst $(DOOM_SRC)/%.c,$(DOOM_BUILD)/%.o,$(DOOM_C))
 
-OBJS          = $(KERNEL_OBJ) $(DRIVERS_OBJ) $(ARCH_OBJ_C) $(ARCH_OBJ_S) $(MAIN_OBJ)
+OBJS          = $(KERNEL_OBJ) $(DRIVERS_OBJ) $(ARCH_OBJ_C) $(ARCH_OBJ_S) $(DOOM_OBJ_C)
 DEPS          = $(OBJS:.o=.d)
 
 # =====================
@@ -86,9 +171,9 @@ $(ARCH_BUILD)/%.o: $(ARCH_SRC)/%.c | $(ARCH_BUILD)
 	@echo "Compilando $<..."
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(MAIN_OBJ): $(MAIN_C) | $(BUILDDIR)
+$(DOOM_BUILD)/%.o: $(DOOM_SRC)/%.c | $(DOOM_BUILD)
 	@echo "Compilando $<..."
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -DNORMALUNIX -DLINUX -DSNDSERV -D_DEFAULT_SOURCE -c $< -o $@
 
 # --- Compilar ASM ---
 $(ARCH_BUILD)/%.o: $(ARCH_SRC)/%.S | $(ARCH_BUILD)
@@ -96,7 +181,7 @@ $(ARCH_BUILD)/%.o: $(ARCH_SRC)/%.S | $(ARCH_BUILD)
 	$(AS) $(ASFLAGS) $< -o $@
 
 # --- Crear directorios ---
-$(KERNEL_BUILD) $(DRIVERS_BUILD) $(ARCH_BUILD):
+$(KERNEL_BUILD) $(DRIVERS_BUILD) $(ARCH_BUILD) $(DOOM_BUILD):
 	mkdir -p $@
 
 # --- Limpiar ---

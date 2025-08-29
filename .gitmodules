@@ -8,3 +8,6 @@
 	path = limine
 	url = https://github.com/limine-bootloader/limine.git
 	branch = v9.x-binary
+[submodule "doomgeneric"]
+	path = doomgeneric
+	url = git@github.com:dinamicoplus/doomgeneric.git
