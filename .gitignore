@@ -5,3 +5,5 @@ libarchive-3.8.1/
 newlib-*/
 build/
 *.log
+config.*
+autom4te.cache/

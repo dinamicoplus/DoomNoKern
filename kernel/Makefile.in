@@ -1,21 +1,21 @@
 # =====================
 # Variables generales
 # =====================
-TARGET_TRIPLE = i686-elf
-ZTGT          = x86-freestanding
+TARGET_TRIPLE = @TARGET_TRIPLE@
+ZTGT          = @ZTGT@
 
-SRCDIR        = src
-INCDIR        = include
-BUILDDIR      = build
-LIBDIR        = lib
+SRCDIR        = @SRCDIR@
+INCDIR        = @INCDIR@
+BUILDDIR      = @BUILDDIR@
+LIBDIR        = @LIBDIR@
 
-CC            = /usr/bin/clang --target=i686-elf
-AS            = /usr/bin/clang --target=i686-elf -c
-AR            = /usr/bin/llvm-ar
-RANLIB        = /usr/bin/llvm-ranlib
-CFLAGS        = -g -O2 -ffreestanding -fno-stack-protector -fno-builtin -m80387 -MMD -MP -Iinclude -Iinclude/newlib -Iinclude/fatfs
-ASFLAGS       = -ffreestanding -fno-stack-protector -m80387
-LDFLAGS       = -nostdlib -nostartfiles -static -Wl,--gc-sections -Wl,-T,linker32.ld
+CC            = @CC@
+AS            = @AS@
+AR            = @AR@
+RANLIB        = @RANLIB@
+CFLAGS        = @CFLAGS@
+ASFLAGS       = @ASFLAGS@
+LDFLAGS       = @LDFLAGS@
 
 # =====================
 # Directorios de origen
@@ -34,7 +34,8 @@ ARCH_BUILD    = $(BUILDDIR)/arch
 # =====================
 # Librerías
 # =====================
-LIBS          = $(LIBDIR)/libm.a $(LIBDIR)/libfatfs.a $(LIBDIR)/libc.a
+LIBS          = $(LIBDIR)/libm.a $(LIBDIR)/libfatfs.a
+LIBC          = $(LIBDIR)/libc.a
 
 # =====================
 # Fuentes
@@ -70,7 +71,7 @@ all: $(KERNEL)
 
 $(KERNEL): $(OBJS)
 	@echo "Enlazando $@..."
-	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
+	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) $(LIBC) -o $@
 
 # --- Compilar C ---
 $(KERNEL_BUILD)/%.o: $(KERNEL_SRC)/%.c | $(KERNEL_BUILD)
