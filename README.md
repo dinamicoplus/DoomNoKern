@@ -2,20 +2,23 @@
 
 ## Compilar
 
-```
+```bash
 git submodule update --init --recursive
 ```
-
+sincronizar submodulos
+```bash
+git submodule sync --recursive
+```
 
 ### Newlib
-```
+```bash
 sudo apt update
 sudo apt install clang lld parted -q -y
 ./scripts/compile-newlib.sh
 ```
 
 ### Limine
-```
+```bash
 sudo apt install nasm mtools parted -q -y
 cd limine
 make
@@ -27,7 +30,7 @@ cd ..
 - Compilar con -O2 evita que el compilador meta traps
 - Compilat con -g para depuracion
 - Hay que activar el punto flotante con -m80387 y ademas con las siguientes instrucciones en boot.S:
-```
+```asm
     mov %cr4, %eax
     or  $(1<<9),  %eax      /* OSFXSR=1: habilita XMM/SSE */
     or  $(1<<10), %eax      /* OSXMMEXCPT=1: excepciones XMM por #XF */
@@ -35,7 +38,7 @@ cd ..
 ```
 - Cuidado con las mascaras de las interrupciones. Activo PIT y Keyboard
 
-```
+```bash
 cd kernel
 make
 cd ..
@@ -43,19 +46,19 @@ cd ..
 qemu-system-i386 -cpu pentium3 -drive format=raw,file=disk.img -no-reboot -no-shutdown
 ```
 Para hacer debugging con lldb
-```
+```bash
 qemu-system-i386 -cpu pentium3 -drive format=raw,file=disk.img -no-reboot -no-shutdown -S -gdb tcp::1234,ipv4 -d int,guest_errors
 lldb -o "settings set target.x86-disassembly-flavor intel" -o "gdb-remote 127.0.0.1:1234" --arch i386 -- kernel/kernel.elf
 ```
 
 ## VBox
 Crear una imagen vdi
-```
+```bash
 VBoxManage convertfromraw disk.img disk.vdi --format VDI --variant Standard
 ```
 
 Crear una VM
-```
+```bash
 VBoxManage createvm \
     --name "kernel-test" \
     --ostype "Other" \  
@@ -91,7 +94,7 @@ No funciona en MacOSX M1 (ARM)
 
 ## UTM
 
-```
+```bash
 qemu-img convert -O qcow2 disk.vdi disk.qcow2
 ```
 
