@@ -15,7 +15,7 @@ AR            = /usr/bin/llvm-ar
 RANLIB        = /usr/bin/llvm-ranlib
 CFLAGS        = -g -O2 -ffreestanding -fno-stack-protector -fno-builtin -m80387 -MMD -MP -Iinclude -Iinclude/newlib -Iinclude/fatfs
 ASFLAGS       = -ffreestanding -fno-stack-protector -m80387
-LDFLAGS       = -nostdlib -nostartfiles -static -Wl,--gc-sections -Wl,-T,linker32.ld
+LDFLAGS       = -nostdlib -nostartfiles -static -Wl,--gc-sections -Wl,-T,linker32.ld -Wl,-z,noexecstack -Wl,--build-id=none
 
 # =====================
 # Directorios de origen
@@ -34,7 +34,8 @@ ARCH_BUILD    = $(BUILDDIR)/arch
 # =====================
 # Librerías
 # =====================
-LIBS          = $(LIBDIR)/libm.a $(LIBDIR)/libfatfs.a $(LIBDIR)/libc.a
+LIBS          = $(LIBDIR)/libm.a $(LIBDIR)/libfatfs.a
+LIBC          = $(LIBDIR)/libc.a
 
 # =====================
 # Fuentes
@@ -70,7 +71,7 @@ all: $(KERNEL)
 
 $(KERNEL): $(OBJS)
 	@echo "Enlazando $@..."
-	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
+	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) $(LIBC) -o $@
 
 # --- Compilar C ---
 $(KERNEL_BUILD)/%.o: $(KERNEL_SRC)/%.c | $(KERNEL_BUILD)

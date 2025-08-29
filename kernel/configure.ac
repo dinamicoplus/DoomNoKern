@@ -53,7 +53,7 @@ fi
 dnl --- Flags por defecto (permiten override vía entorno) ---
 : ${CFLAGS="-g -O2 -ffreestanding -fno-stack-protector -fno-builtin -m80387 -MMD -MP"}
 : ${ASFLAGS="-ffreestanding -fno-stack-protector -m80387"}
-: ${LDFLAGS="-nostdlib -nostartfiles -static -Wl,--gc-sections -Wl,-T,linker32.ld"}
+: ${LDFLAGS="-nostdlib -nostartfiles -static -Wl,--gc-sections -Wl,-T,linker32.ld -Wl,-z,noexecstack -Wl,--build-id=none"}
 
 dnl Añade includes que tu Makefile esperaba
 CFLAGS="$CFLAGS -I$INCDIR -I$INCDIR/newlib -I$INCDIR/fatfs"
