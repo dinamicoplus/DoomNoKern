@@ -1,5 +1,5 @@
 AC_INIT([kernel], [0.1])
-AC_CONFIG_SRCDIR([src/main.c])
+AC_CONFIG_SRCDIR([src/kernel/kernel.c])
 AC_CONFIG_AUX_DIR([.])
 
 AC_CANONICAL_BUILD

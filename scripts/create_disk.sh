@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DISK_IMG="disk.img"
+DISK_IMG="ramdisk.img"
 
 if command -v hdiutil >/dev/null 2>&1; then
     echo "→ Creando disco..."

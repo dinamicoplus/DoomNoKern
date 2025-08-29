@@ -3,7 +3,6 @@
 #include <kernel/system.h>
 #include <arch/x86/idt.h>
 #include <stdio.h>
-#include <disk/fat12_img.h>
 #include <arch/x86/io.h>
 #include <drivers/pit.h>
 
