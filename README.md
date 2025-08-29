@@ -94,3 +94,12 @@ No funciona en MacOSX M1 (ARM)
 ```
 qemu-img convert -O qcow2 disk.vdi disk.qcow2
 ```
+
+# FAT12 disk creation for doom1.wad
+
+```bash
+dd if=/dev/zero of=fat12.img bs=1024 count=$((8*1024))
+mkfs.fat -F 12 -C fat12.img $((8*1024))
+mcopy -i fat12.img doom1.wad ::/
+xxd -i fat12.img kernel/include/disk/fat12_img.h
+```

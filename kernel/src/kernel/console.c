@@ -22,7 +22,7 @@ void console_write(const char* s, size_t n){
 static void console_setup_stdio(console_stdio_mode_t m){
     switch (m){
     case CONSOLE_STDIO_UNBUFFERED:
-        setvbuf(stdin,  NULL, _IONBF, 0);   // <-- añade esto
+        setvbuf(stdin,  NULL, _IOLBF, 0);   // <-- añade esto
         setvbuf(stdout, NULL, _IONBF, 0); 
         setvbuf(stderr, NULL, _IONBF, 0);
         break;
