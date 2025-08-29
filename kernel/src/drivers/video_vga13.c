@@ -117,3 +117,63 @@ void vga13_set_palette_range(uint8_t start, const uint8_t* rgb, int count) {
         outb(0x3C9, rgb[i]);
     }
 }
+
+static uint8_t g_paletteRGB[256*3];
+
+static inline uint8_t to_dac6(uint8_t x){ return (uint8_t)((x * 63 + 127) / 255); } // 0..255 -> 0..63
+
+void vga13_build_palette(void){
+    int i = 0;
+
+    // 0..15: reserva (negro en este ejemplo)
+    for (; i < 16; ++i) {
+        g_paletteRGB[i*3+0] = 0;
+        g_paletteRGB[i*3+1] = 0;
+        g_paletteRGB[i*3+2] = 0;
+    }
+
+    // 16..231: cubo 6x6x6 (R,G,B en 0..5)
+    for (int r=0; r<6; ++r)
+    for (int g=0; g<6; ++g)
+    for (int b=0; b<6; ++b) {
+        uint8_t R = to_dac6((uint8_t)(r * 51)); // 0,51,102,153,204,255
+        uint8_t G = to_dac6((uint8_t)(g * 51));
+        uint8_t B = to_dac6((uint8_t)(b * 51));
+        g_paletteRGB[i*3+0] = R;
+        g_paletteRGB[i*3+1] = G;
+        g_paletteRGB[i*3+2] = B;
+        ++i;
+    }
+
+    // 232..255: escala de grises (24 niveles)
+    for (int k=0; i < 256; ++i, ++k) {
+        uint8_t v8  = (uint8_t)((k * 255) / 23);
+        uint8_t v6  = to_dac6(v8);
+        g_paletteRGB[i*3+0] = v6;
+        g_paletteRGB[i*3+1] = v6;
+        g_paletteRGB[i*3+2] = v6;
+    }
+
+    // Cargar al DAC (0..255), cada valor ya está 0..63
+    vga13_set_palette_range(0, g_paletteRGB, 256);
+}
+
+// Quantización: 32bpp (0xAARRGGBB) -> índice 0..255 del cubo/grises
+uint8_t rgb32_to_index(uint32_t argb){
+    uint8_t r = (argb >> 16) & 0xFF;
+    uint8_t g = (argb >>  8) & 0xFF;
+    uint8_t b = (argb >>  0) & 0xFF;
+
+    // map 0..255 -> 0..5
+    uint8_t R = (uint8_t)((r * 5 + 127) / 255);
+    uint8_t G = (uint8_t)((g * 5 + 127) / 255);
+    uint8_t B = (uint8_t)((b * 5 + 127) / 255);
+
+    return (uint8_t)(16 + R*36 + G*6 + B); // índice dentro del cubo
+}
+
+// Dibuja un píxel 32bpp en VGA 256c
+static inline void vga13_putpixel_rgb32(int x, int y, uint32_t argb){
+    uint8_t idx = rgb32_to_index(argb);
+    vga13_putpixel(x, y, idx);
+}

@@ -1,13 +1,13 @@
 [submodule "fatfs"]
 	path = fatfs
-	url = https://github.com/dinamicoplus/fatfs.git
+	url = git@github.com:dinamicoplus/fatfs.git
 [submodule "newlib"]
 	path = newlib
-	url = https://github.com/dinamicoplus/newlib.git
+	url = git@github.com:dinamicoplus/newlib.git
 [submodule "limine"]
 	path = limine
 	url = https://github.com/limine-bootloader/limine.git
 	branch = v9.x-binary
 [submodule "doomgeneric"]
 	path = doomgeneric
-	url = https://github.com/dinamicoplus/doomgeneric.git
+	url = git@github.com:dinamicoplus/doomgeneric.git

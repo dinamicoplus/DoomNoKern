@@ -92,6 +92,12 @@ void vga13_set_palette(uint8_t index, uint8_t r, uint8_t g, uint8_t b);
  */
 void vga13_set_palette_range(uint8_t start, const uint8_t* rgb, int count);
 
+void vga13_build_palette(void);
+
+uint8_t rgb32_to_index(uint32_t argb);
+
+static inline void vga13_putpixel_rgb32(int x, int y, uint32_t argb);
+
 extern const console_ops_t CONSOLE_VGA13;
 
 #ifdef __cplusplus
