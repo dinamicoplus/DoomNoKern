@@ -55,14 +55,19 @@ DOOM_C = \
   $(DOOM_SRC)/d_loop.c \
   $(DOOM_SRC)/d_main.c \
   $(DOOM_SRC)/d_mode.c \
+  $(DOOM_SRC)/d_net.c \
   $(DOOM_SRC)/f_finale.c \
   $(DOOM_SRC)/f_wipe.c \
   $(DOOM_SRC)/g_game.c \
   $(DOOM_SRC)/hu_lib.c \
   $(DOOM_SRC)/hu_stuff.c \
   $(DOOM_SRC)/info.c \
+  $(DOOM_SRC)/i_cdmus.c \
+  $(DOOM_SRC)/i_endoom.c \
   $(DOOM_SRC)/i_input.c \
+  $(DOOM_SRC)/i_joystick.c \
   $(DOOM_SRC)/i_scale.c \
+  $(DOOM_SRC)/i_sound.c \
   $(DOOM_SRC)/i_system.c \
   $(DOOM_SRC)/i_timer.c \
   $(DOOM_SRC)/memio.c \
@@ -102,9 +107,12 @@ DOOM_C = \
   $(DOOM_SRC)/r_segs.c \
   $(DOOM_SRC)/r_sky.c \
   $(DOOM_SRC)/r_things.c \
+  $(DOOM_SRC)/sounds.c \
   $(DOOM_SRC)/sha1.c \
+  $(DOOM_SRC)/statdump.c \
   $(DOOM_SRC)/st_lib.c \
   $(DOOM_SRC)/st_stuff.c \
+  $(DOOM_SRC)/s_sound.c \
   $(DOOM_SRC)/tables.c \
   $(DOOM_SRC)/v_video.c \
   $(DOOM_SRC)/wi_stuff.c \
