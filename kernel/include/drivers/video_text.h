@@ -5,6 +5,8 @@
 extern const console_ops_t CONSOLE_TEXT;
 
 /* Si quieres usarlo directo, también puedes exponer helpers aquí */
-static inline void vga_disable_cursor(void);
+void vga_disable_cursor(void);
 
-static inline void vga_enable_cursor(uint8_t start, uint8_t end);
+void vga_enable_cursor(uint8_t start, uint8_t end);
+
+void vga_init_text_mode(void);

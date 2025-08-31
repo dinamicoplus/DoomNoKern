@@ -27,12 +27,6 @@ extern "C" {
  * @brief Establece el modo gráfico 13h (320x200x256 colores)
  */
 void vga_set_mode13(void);
-
-/**
- * @brief Deshabilita el cursor hardware
- */
-void vga_disable_cursor(void);
-
 /**
  * @brief Limpia la pantalla con un color específico
  * @param color Índice de color (0-255)
@@ -95,6 +89,26 @@ void vga13_set_palette_range(uint8_t start, const uint8_t* rgb, int count);
 void vga13_build_palette(void);
 
 uint8_t rgb32_to_index(uint32_t argb);
+
+/**
+ * @brief Builds an enhanced 8x8x4 RGB color palette using all 256 colors
+ */
+void vga13_build_enhanced_palette(void);
+
+/**
+ * @brief Converts 32-bit RGBA color to enhanced palette index (0-255)
+ * @param rgba 32-bit RGBA color (0xRRGGBBAA)
+ * @return Palette index in the enhanced 8x8x4 color cube
+ */
+uint8_t rgb32_to_enhanced_index(uint32_t rgba);
+
+/**
+ * @brief Draws a pixel with 32-bit RGBA color using the enhanced palette
+ * @param x Coordinate X
+ * @param y Coordinate Y
+ * @param argb 32-bit RGBA color (0xRRGGBBAA)
+ */
+static inline void vga13_putpixel_enhanced_rgb32(int x, int y, uint32_t argb);
 
 static inline void vga13_putpixel_rgb32(int x, int y, uint32_t argb);
 

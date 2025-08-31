@@ -2,19 +2,19 @@
  * @file vga13.c
  * @brief Implementación del driver para modo gráfico VGA 13h
  */
+#include <drivers/video_text.h>
 #include <drivers/video_vga13.h>
 #include <arch/x86/io.h>
 
-#define VGA_MEM      ((volatile uint8_t*)0xA0000)
-#define VGA_W        320
-#define VGA_H        200
+
+#define RC(x) (((x)>> 16)&0xFF)
+#define GC(x) (((x)>>  8)&0xFF)
+#define BC(x) (((x)>>  0)&0xFF)
 
 static void vga_write_seq(uint8_t idx, uint8_t val){ outb(0x3C4, idx); outb(0x3C5, val); }
 static void vga_write_crt(uint8_t idx, uint8_t val){ outb(0x3D4, idx); outb(0x3D5, val); }
 static void vga_write_gc (uint8_t idx, uint8_t val){ outb(0x3CE, idx); outb(0x3CF, val); }
 static void vga_write_ac (uint8_t idx, uint8_t val){ (void)inb(0x3DA); outb(0x3C0, idx); outb(0x3C0, val); }
-
-void vga_disable_cursor(void){ outb(0x3D4,0x0A); outb(0x3D5,0x20); }
 
 void vga_set_mode13(void){
     // Misc Output: seleccionar reloj/puertos para 320x200
@@ -60,47 +60,47 @@ void vga_set_mode13(void){
 
 // Helpers simples para dibujar
 void vga13_clear(uint8_t color){
-    for (int i=0;i<VGA_W*VGA_H;i++) VGA_MEM[i] = color;
+    for (int i=0;i<VGA13_W*VGA13_H;i++) VGA13_FB[i] = color;
 }
 
 void vga13_putpixel(int x,int y,uint8_t c){
-    if ((unsigned)x<VGA_W && (unsigned)y<VGA_H) VGA_MEM[y*VGA_W + x] = c;
+    if ((unsigned)x<VGA13_W && (unsigned)y<VGA13_H) VGA13_FB[y*VGA13_W + x] = c;
 }
 
 void vga13_hline(int x, int y, int w, uint8_t color) {
-    if (y < 0 || y >= VGA_H) return;
+    if (y < 0 || y >= VGA13_H) return;
     if (x < 0) { w += x; x = 0; }
-    if (x + w > VGA_W) w = VGA_W - x;
+    if (x + w > VGA13_W) w = VGA13_W - x;
     if (w <= 0) return;
     
-    volatile uint8_t* dst = VGA_MEM + (y * VGA_W) + x;
+    volatile uint8_t* dst = VGA13_FB + (y * VGA13_W) + x;
     for (int i = 0; i < w; i++) *dst++ = color;
 }
 
 void vga13_vline(int x, int y, int h, uint8_t color) {
-    if (x < 0 || x >= VGA_W) return;
+    if (x < 0 || x >= VGA13_W) return;
     if (y < 0) { h += y; y = 0; }
-    if (y + h > VGA_H) h = VGA_H - y;
+    if (y + h > VGA13_H) h = VGA13_H - y;
     if (h <= 0) return;
     
-    volatile uint8_t* dst = VGA_MEM + (y * VGA_W) + x;
+    volatile uint8_t* dst = VGA13_FB + (y * VGA13_W) + x;
     for (int i = 0; i < h; i++) {
         *dst = color;
-        dst += VGA_W;
+        dst += VGA13_W;
     }
 }
 
 void vga13_rect_fill(int x, int y, int w, int h, uint8_t color) {
     if (x < 0) { w += x; x = 0; }
     if (y < 0) { h += y; y = 0; }
-    if (x + w > VGA_W) w = VGA_W - x;
-    if (y + h > VGA_H) h = VGA_H - y;
+    if (x + w > VGA13_W) w = VGA13_W - x;
+    if (y + h > VGA13_H) h = VGA13_H - y;
     if (w <= 0 || h <= 0) return;
     
-    volatile uint8_t* dst = VGA_MEM + (y * VGA_W) + x;
+    volatile uint8_t* dst = VGA13_FB + (y * VGA13_W) + x;
     for (int j = 0; j < h; j++) {
         for (int i = 0; i < w; i++) dst[i] = color;
-        dst += VGA_W;
+        dst += VGA13_W;
     }
 }
 
@@ -158,11 +158,12 @@ void vga13_build_palette(void){
     vga13_set_palette_range(0, g_paletteRGB, 256);
 }
 
-// Quantización: 32bpp (0xAARRGGBB) -> índice 0..255 del cubo/grises
-uint8_t rgb32_to_index(uint32_t argb){
-    uint8_t r = (argb >> 16) & 0xFF;
-    uint8_t g = (argb >>  8) & 0xFF;
-    uint8_t b = (argb >>  0) & 0xFF;
+// Quantización: 32bpp (0xRRGGBBAA) -> índice 0..255 del cubo/grises
+uint8_t rgb32_to_index(uint32_t rgba){
+
+    uint8_t r = (uint8_t)RC(rgba);
+    uint8_t g = (uint8_t)GC(rgba);
+    uint8_t b = (uint8_t)BC(rgba);
 
     // map 0..255 -> 0..5
     uint8_t R = (uint8_t)((r * 5 + 127) / 255);
@@ -175,5 +176,51 @@ uint8_t rgb32_to_index(uint32_t argb){
 // Dibuja un píxel 32bpp en VGA 256c
 static inline void vga13_putpixel_rgb32(int x, int y, uint32_t argb){
     uint8_t idx = rgb32_to_index(argb);
+    vga13_putpixel(x, y, idx);
+}
+
+static uint8_t g_enhancedPaletteRGB[256*3];
+
+void vga13_build_enhanced_palette(void) {
+    int i = 0;
+
+    // Create an 8x8x4 color cube (8 levels R, 8 levels G, 4 levels B)
+    // This gives better resolution to red and green which human eyes are more sensitive to
+    for (int r = 0; r < 8; ++r)
+    for (int g = 0; g < 8; ++g)
+    for (int b = 0; b < 4; ++b) {
+        // Convert to 0-255 range first
+        uint8_t R8 = (uint8_t)((r * 255) / 7);    // 8 levels (0-7)
+        uint8_t G8 = (uint8_t)((g * 255) / 7);    // 8 levels (0-7)
+        uint8_t B8 = (uint8_t)((b * 255) / 3);    // 4 levels (0-3)
+        
+        // Then convert to DAC 6-bit values
+        g_enhancedPaletteRGB[i*3+0] = to_dac6(R8);
+        g_enhancedPaletteRGB[i*3+1] = to_dac6(G8);
+        g_enhancedPaletteRGB[i*3+2] = to_dac6(B8);
+        ++i;
+    }
+
+    // Load to DAC (all 256 colors)
+    vga13_set_palette_range(0, g_enhancedPaletteRGB, 256);
+}
+
+// Enhanced quantization: 32bpp (0xRRGGBBAA) -> index 0..255 of 8x8x4 cube
+uint8_t rgb32_to_enhanced_index(uint32_t rgba) {
+    uint8_t r = (uint8_t)RC(rgba);
+    uint8_t g = (uint8_t)GC(rgba);
+    uint8_t b = (uint8_t)BC(rgba);
+
+    // map to our palette dimensions
+    uint8_t R = (uint8_t)((r * 7 + 127) / 255);  // 0..7
+    uint8_t G = (uint8_t)((g * 7 + 127) / 255);  // 0..7  
+    uint8_t B = (uint8_t)((b * 3 + 127) / 255);  // 0..3
+
+    return (uint8_t)(R*32 + G*4 + B);  // R*8*4 + G*4 + B
+}
+
+// Draw a 32bpp pixel using enhanced palette
+static inline void vga13_putpixel_enhanced_rgb32(int x, int y, uint32_t argb) {
+    uint8_t idx = rgb32_to_enhanced_index(argb);
     vga13_putpixel(x, y, idx);
 }

@@ -12,18 +12,23 @@ static uint8_t  vga_attr = 0x07;     // gris sobre negro
 static int      vga_row  = 0;
 static int      vga_col  = 0;
 
+void vga_init_text_mode(void){
+    outb(0x3C2, 0x03); // modo 3 = 80x25 texto, 16 colores
+    // CRTC Controller
+}
+
 static inline uint16_t vga_entry(char ch, uint8_t attr){
     return (uint16_t)ch | ((uint16_t)attr << 8);
 }
 
 /* ---- Cursor hardware (tuyas, usando io.h) ---- */
-static inline void vga_disable_cursor(void){
+void vga_disable_cursor(void){
     outb(0x3D4, 0x0A);
     uint8_t val = inb(0x3D5) | 0x20;   // set bit5 = disable
     outb(0x3D5, val);
 }
 
-static inline void vga_enable_cursor(uint8_t start, uint8_t end){
+void vga_enable_cursor(uint8_t start, uint8_t end){
     outb(0x3D4, 0x0A);
     uint8_t val = (inb(0x3D5) & 0xC0) | (start & 0x1F);
     outb(0x3D5, val);
@@ -31,14 +36,14 @@ static inline void vga_enable_cursor(uint8_t start, uint8_t end){
     outb(0x3D5, end & 0x1F);
 }
 
-static inline void vga_update_cursor(int row, int col){
+void vga_update_cursor(int row, int col){
     uint16_t pos = (uint16_t)(row * VGA_W + col);
     outb(0x3D4, 0x0F); outb(0x3D5, (uint8_t)(pos & 0xFF));     // low
     outb(0x3D4, 0x0E); outb(0x3D5, (uint8_t)(pos >> 8));       // high
 }
 
 /* ---- Backend console: clear/putc/write ---- */
-static void vga_clear(void){
+void vga_clear(void){
     uint16_t blank = vga_entry(' ', vga_attr);
     for (int r=0; r<VGA_H; ++r)
         for (int c=0; c<VGA_W; ++c)
