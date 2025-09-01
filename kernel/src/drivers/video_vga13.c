@@ -118,7 +118,7 @@ void vga13_set_palette_range(uint8_t start, const uint8_t* rgb, int count) {
     }
 }
 
-static uint8_t g_paletteRGB[256*3];
+uint8_t g_paletteRGB[256*3];
 
 static inline uint8_t to_dac6(uint8_t x){ return (uint8_t)((x * 63 + 127) / 255); } // 0..255 -> 0..63
 

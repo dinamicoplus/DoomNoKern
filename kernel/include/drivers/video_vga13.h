@@ -114,6 +114,8 @@ static inline void vga13_putpixel_rgb32(int x, int y, uint32_t argb);
 
 extern const console_ops_t CONSOLE_VGA13;
 
+extern uint8_t g_paletteRGB[256 * 3];
+
 #ifdef __cplusplus
 }
 #endif
